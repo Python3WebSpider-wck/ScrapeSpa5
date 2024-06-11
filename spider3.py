@@ -8,6 +8,7 @@ import logging
 from aiohttp import ContentTypeError
 from motor.motor_asyncio import AsyncIOMotorClient
 
+
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s: %(message)s')
 
@@ -23,16 +24,16 @@ MONGO_COLLECTION_NAME = 'books'
 
 client = AsyncIOMotorClient(MONGO_CONNECTION_STRING)
 db = client[MONGO_DB_NAME]
-collection = db[MONGO_CONNECTION_STRING]
+collection = db[MONGO_COLLECTION_NAME]
 
 loop = asyncio.get_event_loop()
 
 
 class Spider(object):
-    
+
     def __init__(self):
         self.semaphore = asyncio.Semaphore(CONCURRENCY)
-    
+
     async def scrape_api(self, url):
         async with self.semaphore:
             try:
@@ -42,16 +43,16 @@ class Spider(object):
                     return await response.json()
             except ContentTypeError as e:
                 logging.error('error occurred while scraping %s', url, exc_info=True)
-    
+
     async def scrape_index(self, page):
         url = INDEX_URL.format(offset=PAGE_SIZE * (page - 1))
         return await self.scrape_api(url)
-    
+
     async def scrape_detail(self, id):
         url = DETAIL_URL.format(id=id)
         data = await self.scrape_api(url)
         await self.save_data(data)
-    
+
     async def save_data(self, data):
         logging.info('saving data %s', data)
         if data:
@@ -60,7 +61,7 @@ class Spider(object):
             }, {
                 '$set': data
             }, upsert=True)
-    
+
     async def main(self):
         self.session = aiohttp.ClientSession()
         # index tasks
@@ -70,7 +71,8 @@ class Spider(object):
         print('results', results)
         ids = []
         for index_data in results:
-            if not index_data: continue
+            if not index_data:
+                continue
             for item in index_data.get('results'):
                 ids.append(item.get('id'))
         scrape_detail_tasks = [asyncio.ensure_future(self.scrape_detail(id)) for id in ids]

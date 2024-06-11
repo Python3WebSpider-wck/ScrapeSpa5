@@ -19,7 +19,7 @@ MONGO_COLLECTION_NAME = 'books'
 
 client = AsyncIOMotorClient(MONGO_CONNECTION_STRING)
 db = client[MONGO_DB_NAME]
-collection = db[MONGO_CONNECTION_STRING]
+collection = db[MONGO_COLLECTION_NAME]
 
 
 async def scrape_api(url):
